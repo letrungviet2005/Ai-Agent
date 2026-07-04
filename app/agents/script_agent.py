@@ -1,33 +1,11 @@
-from app.core.llm import LLMService
+from app.agents.base_agent import BaseAgent
+from app.models.product import Product
+from app.models.script import Script
+from app.prompts.script_prompt import SCRIPT_SYSTEM, build_script_prompt
 
-class ScriptAgent:
 
-    def __init__(self):
-        self.llm = LLMService()
-
-    def generate(self, product):
-
-        prompt = f"""
-Bạn là chuyên gia TikTok.
-
-Viết 3 kịch bản TikTok.
-
-Tên:
-{product.name}
-
-Giá:
-{product.price}
-
-Mô tả:
-{product.description}
-
-Khách hàng:
-{product.target_customer}
-
-Yêu cầu:
-- Hook mạnh 3 giây đầu
-- Dài khoảng 40 giây
-- Có CTA cuối.
-"""
-
-        return self.llm.generate(prompt)
+class ScriptAgent(BaseAgent):
+    def generate(self, product: Product) -> Script:
+        prompt = build_script_prompt(product)
+        data = self.llm.generate_json(prompt, system=SCRIPT_SYSTEM)
+        return Script.model_validate(data)
