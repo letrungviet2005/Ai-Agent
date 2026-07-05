@@ -31,8 +31,8 @@ class VideoAgent(BaseAgent):
         frames_dir.mkdir(parents=True, exist_ok=True)
 
         image_paths = download_images(product.images, assets_dir)
+        placeholder = assets_dir / "placeholder.jpg"
         if not image_paths:
-            placeholder = assets_dir / "placeholder.jpg"
             create_placeholder_image(product.name, product.price, placeholder)
             image_paths = [placeholder]
 
@@ -46,12 +46,22 @@ class VideoAgent(BaseAgent):
 
             image_path = image_paths[index % len(image_paths)]
             frame_path = frames_dir / f"scene_{scene.id:02d}.jpg"
-            frame_array = render_scene_frame(
-                image_path=image_path,
-                text_overlay=scene.text_overlay,
-                price=product.price,
-                product_name=product.name,
-            )
+            try:
+                frame_array = render_scene_frame(
+                    image_path=image_path,
+                    text_overlay=scene.text_overlay,
+                    price=product.price,
+                    product_name=product.name,
+                )
+            except OSError:
+                if not placeholder.exists():
+                    create_placeholder_image(product.name, product.price, placeholder)
+                frame_array = render_scene_frame(
+                    image_path=placeholder,
+                    text_overlay=scene.text_overlay,
+                    price=product.price,
+                    product_name=product.name,
+                )
             Image.fromarray(frame_array).save(frame_path)
 
             audio_clip = AudioFileClip(audio_scene.file_path)

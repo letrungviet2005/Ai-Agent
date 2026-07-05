@@ -1,8 +1,9 @@
+from io import BytesIO
 from pathlib import Path
 
 import httpx
 import numpy as np
-from PIL import Image, ImageDraw, ImageFont
+from PIL import Image, ImageDraw, ImageFont, UnidentifiedImageError
 
 from app.core.config import VIDEO_HEIGHT, VIDEO_WIDTH
 
@@ -39,10 +40,18 @@ def download_images(urls: list[str], dest_dir: Path) -> list[Path]:
             try:
                 response = client.get(url)
                 response.raise_for_status()
+                content_type = response.headers.get("content-type", "").lower()
+                if content_type and not content_type.startswith("image/"):
+                    continue
+
+                with Image.open(BytesIO(response.content)) as image:
+                    image.load()
+                    normalized = image.convert("RGB")
+
                 path = dest_dir / f"image_{index + 1}.jpg"
-                path.write_bytes(response.content)
+                normalized.save(path, format="JPEG", quality=92, optimize=True)
                 saved.append(path)
-            except httpx.HTTPError:
+            except (httpx.HTTPError, OSError, UnidentifiedImageError):
                 continue
 
     return saved
@@ -99,7 +108,8 @@ def render_scene_frame(
     price: str,
     product_name: str,
 ) -> np.ndarray:
-    base = Image.open(image_path).convert("RGB")
+    with Image.open(image_path) as image:
+        base = image.convert("RGB")
     frame = _fit_cover(base, VIDEO_WIDTH, VIDEO_HEIGHT)
     draw = ImageDraw.Draw(frame)
 
