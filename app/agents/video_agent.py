@@ -46,12 +46,15 @@ class VideoAgent(BaseAgent):
 
             image_path = image_paths[index % len(image_paths)]
             frame_path = frames_dir / f"scene_{scene.id:02d}.jpg"
+            show_visual_card = image_path == placeholder
             try:
                 frame_array = render_scene_frame(
                     image_path=image_path,
                     text_overlay=scene.text_overlay,
                     price=product.price,
                     product_name=product.name,
+                    visual_text=scene.visual,
+                    show_visual_card=show_visual_card,
                 )
             except OSError:
                 if not placeholder.exists():
@@ -61,6 +64,8 @@ class VideoAgent(BaseAgent):
                     text_overlay=scene.text_overlay,
                     price=product.price,
                     product_name=product.name,
+                    visual_text=scene.visual,
+                    show_visual_card=True,
                 )
             Image.fromarray(frame_array).save(frame_path)
 

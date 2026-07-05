@@ -58,13 +58,30 @@ def download_images(urls: list[str], dest_dir: Path) -> list[Path]:
 
 
 def create_placeholder_image(title: str, price: str, dest: Path) -> Path:
-    image = Image.new("RGB", (VIDEO_WIDTH, VIDEO_HEIGHT), color=(20, 20, 30))
+    image = Image.new("RGB", (VIDEO_WIDTH, VIDEO_HEIGHT), color=(18, 24, 38))
     draw = ImageDraw.Draw(image)
-    font_title = get_font(64)
-    font_price = get_font(48)
+    for y in range(VIDEO_HEIGHT):
+        ratio = y / VIDEO_HEIGHT
+        red = int(18 + ratio * 18)
+        green = int(24 + ratio * 50)
+        blue = int(38 + ratio * 42)
+        draw.line((0, y, VIDEO_WIDTH, y), fill=(red, green, blue))
 
-    draw.text((60, 800), title[:40], fill="white", font=font_title)
-    draw.text((60, 920), price, fill=(255, 200, 50), font=font_price)
+    font_title = get_font(58)
+    font_price = get_font(46)
+    font_label = get_font(30)
+
+    draw.rounded_rectangle((70, 280, VIDEO_WIDTH - 70, 1120), radius=36, fill=(255, 255, 255))
+    draw.rounded_rectangle((120, 350, VIDEO_WIDTH - 120, 720), radius=28, fill=(235, 241, 247))
+    draw.text((150, 460), "ẢNH SẢN PHẨM", fill=(60, 70, 85), font=font_label)
+    draw.text((150, 510), "chưa tải được", fill=(60, 70, 85), font=font_label)
+
+    title_lines = _wrap_text(title, font_title, VIDEO_WIDTH - 220)
+    y = 770
+    for line in title_lines[:3]:
+        draw.text((120, y), line, fill=(20, 28, 42), font=font_title)
+        y += 68
+    draw.text((120, 1010), price, fill=(220, 120, 20), font=font_price)
     dest.parent.mkdir(parents=True, exist_ok=True)
     image.save(dest)
     return dest
@@ -102,11 +119,31 @@ def _wrap_text(text: str, font: ImageFont.FreeTypeFont | ImageFont.ImageFont, ma
     return lines or [text[:60]]
 
 
+def _draw_wrapped_text(
+    draw: ImageDraw.ImageDraw,
+    text: str,
+    xy: tuple[int, int],
+    font: ImageFont.FreeTypeFont | ImageFont.ImageFont,
+    fill: tuple[int, int, int] | str,
+    max_width: int,
+    line_height: int,
+    max_lines: int,
+) -> int:
+    x, y = xy
+    lines = _wrap_text(text, font, max_width)
+    for line in lines[:max_lines]:
+        draw.text((x, y), line, fill=fill, font=font)
+        y += line_height
+    return y
+
+
 def render_scene_frame(
     image_path: Path,
     text_overlay: str,
     price: str,
     product_name: str,
+    visual_text: str = "",
+    show_visual_card: bool = False,
 ) -> np.ndarray:
     with Image.open(image_path) as image:
         base = image.convert("RGB")
@@ -124,6 +161,36 @@ def render_scene_frame(
 
     font_overlay = get_font(52)
     font_meta = get_font(36)
+    font_visual = get_font(38)
+    font_visual_title = get_font(44)
+
+    if show_visual_card and visual_text:
+        card_left = 70
+        card_top = 360
+        card_right = VIDEO_WIDTH - 70
+        card_bottom = 1180
+        draw.rounded_rectangle(
+            (card_left, card_top, card_right, card_bottom),
+            radius=32,
+            fill=(255, 255, 255),
+        )
+        draw.text(
+            (card_left + 42, card_top + 42),
+            "Nội dung cảnh",
+            fill=(24, 34, 48),
+            font=font_visual_title,
+        )
+        _draw_wrapped_text(
+            draw=draw,
+            text=visual_text,
+            xy=(card_left + 42, card_top + 120),
+            font=font_visual,
+            fill=(45, 55, 70),
+            max_width=card_right - card_left - 84,
+            line_height=50,
+            max_lines=11,
+        )
+
     lines = _wrap_text(text_overlay, font_overlay, VIDEO_WIDTH - 120)
 
     y = VIDEO_HEIGHT - 360
