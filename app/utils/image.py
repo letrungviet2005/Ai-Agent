@@ -87,6 +87,76 @@ def create_placeholder_image(title: str, price: str, dest: Path) -> Path:
     return dest
 
 
+def create_scene_storyboard_image(
+    product_name: str,
+    price: str,
+    scene_visual: str,
+    text_overlay: str,
+    dest: Path,
+) -> Path:
+    image = Image.new("RGB", (VIDEO_WIDTH, VIDEO_HEIGHT), color=(246, 248, 250))
+    draw = ImageDraw.Draw(image)
+
+    for y in range(VIDEO_HEIGHT):
+        ratio = y / VIDEO_HEIGHT
+        red = int(238 - ratio * 16)
+        green = int(244 - ratio * 28)
+        blue = int(248 - ratio * 30)
+        draw.line((0, y, VIDEO_WIDTH, y), fill=(red, green, blue))
+
+    font_label = get_font(30)
+    font_title = get_font(54)
+    font_body = get_font(38)
+    font_overlay = get_font(64)
+    font_price = get_font(42)
+
+    draw.rounded_rectangle((70, 80, VIDEO_WIDTH - 70, 280), radius=28, fill=(22, 32, 48))
+    _draw_wrapped_text(
+        draw=draw,
+        text=product_name,
+        xy=(110, 116),
+        font=font_title,
+        fill="white",
+        max_width=VIDEO_WIDTH - 220,
+        line_height=62,
+        max_lines=2,
+    )
+
+    draw.rounded_rectangle((70, 340, VIDEO_WIDTH - 70, 1260), radius=36, fill=(255, 255, 255))
+    draw.text((110, 390), "Hình ảnh cần tạo từ scene.visual", fill=(90, 100, 115), font=font_label)
+    _draw_wrapped_text(
+        draw=draw,
+        text=scene_visual,
+        xy=(110, 460),
+        font=font_body,
+        fill=(28, 38, 52),
+        max_width=VIDEO_WIDTH - 220,
+        line_height=52,
+        max_lines=12,
+    )
+
+    draw.rounded_rectangle(
+        (110, 1320, VIDEO_WIDTH - 110, 1570),
+        radius=30,
+        fill=(255, 240, 214),
+    )
+    _draw_wrapped_text(
+        draw=draw,
+        text=text_overlay,
+        xy=(150, 1365),
+        font=font_overlay,
+        fill=(18, 24, 36),
+        max_width=VIDEO_WIDTH - 300,
+        line_height=74,
+        max_lines=2,
+    )
+
+    draw.text((110, VIDEO_HEIGHT - 180), price, fill=(210, 100, 24), font=font_price)
+    dest.parent.mkdir(parents=True, exist_ok=True)
+    image.save(dest)
+    return dest
+
+
 def _fit_cover(image: Image.Image, width: int, height: int) -> Image.Image:
     ratio = max(width / image.width, height / image.height)
     resized = image.resize(
